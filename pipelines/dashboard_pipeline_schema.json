@@ -1,0 +1,301 @@
+{
+    "pipeline_name": "Project Information",
+    "scope": "Dashboard to compare two projects",
+    "scope_description": "Comparison of project activities, costs, and current status.",
+    "fields": {  },
+    "csvs": [
+        {
+            "name": "projects",
+            "connector": "csvs",
+            "csv_name": "stadium_projects.csv"
+        },
+        {
+            "name": "project_updates",
+            "connector": "csvs",
+            "csv_name": "project_updates.csv"
+        },
+        {
+            "name": "activities",
+            "connector": "csvs",
+            "csv_name": "activities.csv"
+        }
+    ],
+    "filters":[
+        {
+            "name": "primary_project",
+            "display_name": "Primary Project",
+            "column_name": "project_id",
+            "include_any": false,
+            "query": "projects"
+        },
+        {
+            "name": "secondary_project",
+            "display_name": "Secondary Project",
+            "column_name": "project_id",
+            "include_any": false,
+            "query": "projects"
+        }
+    ],
+    "datasets": [
+        {
+            "name": "Primary Project Data",
+            "create": [
+                {
+                    "type": "query",
+                    "name": "projects"
+                },
+                {
+                    "type": "filter",
+                    "filters": ["primary_project"]
+                }
+            ],
+            "prefix": "The following details are for the primary project in this summary. ",
+            "summarize": "The project ID is {project_id}. The project name is {project_name}. The stadium is being built in {location}. It has a budget of {budget}. It is {percent_complete} done. It started on {start_date}. It is estimated to finish on {estimated_end_date}. ",
+            "remove_comma": false
+        },
+        {
+            "name": "Primary Project Activity Data",
+            "create": [
+                {
+                    "type": "query",
+                    "name": "activities"
+                },
+                {
+                    "type": "filter",
+                    "filters": ["primary_project"]
+                }
+            ]
+        },
+        {
+            "name": "Primary Project Updates",
+            "create": [
+                {
+                    "type": "query",
+                    "name": "project_updates"
+                },
+                {
+                    "type": "filter",
+                    "filters": ["primary_project"]
+                }
+            ]
+        },
+        {
+            "name": "Primary Project Activities By Status",
+            "create": [
+                {
+                    "type": "dataset",
+                    "name": "Primary Project Activity Data"
+                },
+                {
+                    "type": "function",
+                    "name": "build_pie_graph",
+                    "params": {
+                        "index_field": "activity_status",
+                        "value_field": "count",
+                        "label_field": "Activity Status"
+                    }
+                }
+            ],
+            "summarize": "There are {count} phases that are {Activity Status}. ",
+            "remove_comma": false
+        },
+        {
+            "name": "Primary Project Activity Status By Days",
+            "create": [
+                {
+                    "type": "dataset",
+                    "name": "Primary Project Activity Data"
+                },
+                {
+                    "type": "function",
+                    "name": "build_pie_graph",
+                    "params": {
+                        "index_field": "activity_status",
+                        "value_field": "Duration in Days",
+                        "label_field": "Activity Status",
+                        "count_field": "duration"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Primary Project Current Activity",
+            "create": [
+                {
+                    "type": "dataset",
+                    "name": "Primary Project Activity Data"
+                },
+                {
+                    "type": "function",
+                    "name": "filter_by_value",
+                    "params": {
+                        "column": "activity_status",
+                        "value": "In Progress"
+                    }
+                }
+            ],
+            "summarize": "The current activity phase is {activity_name}. ",
+            "remove_comma": false
+        },
+        {
+            "name": "Secondary Project Data",
+            "create": [
+                {
+                    "type": "query",
+                    "name": "projects"
+                },
+                {
+                    "type": "filter",
+                    "filters": ["secondary_project"]
+                }
+            ],
+            "prefix": "The following details are for the secondary project in this summary. ",
+            "summarize": "The project ID is {project_id}. The project name is {project_name}. The stadium is being built in {location}. It has a budget of {budget}. It is {percent_complete} done. It started on {start_date}. It is estimated to finish on {estimated_end_date}. ",
+            "remove_comma": false
+        },
+        {
+            "name": "Secondary Project Activity Data",
+            "create": [
+                {
+                    "type": "query",
+                    "name": "activities"
+                },
+                {
+                    "type": "filter",
+                    "filters": ["secondary_project"]
+                }
+            ]
+        },
+        {
+            "name": "Secondary Project Updates",
+            "create": [
+                {
+                    "type": "query",
+                    "name": "project_updates"
+                },
+                {
+                    "type": "filter",
+                    "filters": ["secondary_project"]
+                }
+            ]
+        },
+        {
+            "name": "Secondary Project Activities By Status",
+            "create": [
+                {
+                    "type": "dataset",
+                    "name": "Secondary Project Activity Data"
+                },
+                {
+                    "type": "function",
+                    "name": "build_pie_graph",
+                    "params": {
+                        "index_field": "activity_status",
+                        "value_field": "count",
+                        "label_field": "Activity Status"
+                    }
+                }
+            ],
+            "summarize": "There are {count} phases that are {Activity Status}. ",
+            "remove_comma": false
+        },
+        {
+            "name": "Secondary Project Activity Status By Days",
+            "create": [
+                {
+                    "type": "dataset",
+                    "name": "Secondary Project Activity Data"
+                },
+                {
+                    "type": "function",
+                    "name": "build_pie_graph",
+                    "params": {
+                        "index_field": "activity_status",
+                        "value_field": "Duration in Days",
+                        "label_field": "Activity Status",
+                        "count_field": "duration"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Secondary Project Current Activity",
+            "create": [
+                {
+                    "type": "dataset",
+                    "name": "Secondary Project Activity Data"
+                },
+                {
+                    "type": "function",
+                    "name": "filter_by_value",
+                    "params": {
+                        "column": "activity_status",
+                        "value": "In Progress"
+                    }
+                }
+            ],
+            "summarize": "The current activity phase is {activity_name}. ",
+            "remove_comma": false
+        }
+    ],
+    "summary": {
+        "datasets": [
+            "Primary Project Data",
+            "Primary Project Activities By Status",
+            "Primary Project Current Activity",
+            "Secondary Project Data",
+            "Secondary Project Activities By Status",
+            "Secondary Project Current Activity"
+        ]
+    },
+    "visualizations": [
+        {
+            "type": "pie",
+            "dataset": "Primary Project Activities By Status",
+            "title": "Primary Project Activities By Status",
+            "value_column": "count",
+            "label_column": "Activity Status",
+            "description": "Pie Graph of activities by their progress status."
+        },
+        {
+            "type": "line",
+            "dataset": "Primary Project Updates",
+            "title": "Primary Project Progress",
+            "x_axis": "date",
+            "y_axis": "percent_complete",
+            "description": "Line Graph of a projects percent complete over time."
+        },
+        {
+            "type": "pie",
+            "dataset": "Primary Project Activity Status By Days",
+            "title": "Primary Project Activity Status by Days",
+            "value_column": "Duration in Days",
+            "label_column": "Activity Status",
+            "description": "Pie Graph of activity statuses' by their duration in days."
+        },
+        {
+            "type": "pie",
+            "dataset": "Secondary Project Activities By Status",
+            "title": "Secondary Project Activities By Status",
+            "value_column": "count",
+            "label_column": "Activity Status",
+            "description": "Pie Graph of activities by their progress status."
+        },
+        {
+            "type": "line",
+            "dataset": "Secondary Project Updates",
+            "title": "Secondary Project Progress",
+            "x_axis": "date",
+            "y_axis": "percent_complete",
+            "description": "Line Graph of a projects percent complete over time."
+        },
+        {
+            "type": "pie",
+            "dataset": "Secondary Project Activity Status By Days",
+            "title": "Secondary Project Activity Status by Days",
+            "value_column": "Duration in Days",
+            "label_column": "Activity Status",
+            "description": "Pie Graph of activity statuses' by their duration in days."
+        }
+    ]
+}

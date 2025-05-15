@@ -1,0 +1,175 @@
+{
+    "pipeline_name": "Project Information",
+    "scope": "Information for project {base.project_id}",
+    "scope_description": "Details on project activities, costs, and current status.",
+    "fields": {
+        "base": {
+            "project_id": {
+                "name": "project_id",
+                "type": "string",
+                "required": true,
+                "description": "Id of Project"
+            }
+        }
+    },
+    "csvs": [
+        {
+            "name": "projects",
+            "connector": "csvs",
+            "csv_name": "stadium_projects.csv",
+            "column_filters": [
+                {
+                    "field": "base.project_id",
+                    "column": "project_id",
+                    "value": "{base.project_id}"
+                }
+            ]
+        },
+        {
+            "name": "project_updates",
+            "connector": "csvs",
+            "csv_name": "project_updates.csv",
+            "column_filters": [
+                {
+                    "field": "base.project_id",
+                    "column": "project_id",
+                    "value": "{base.project_id}"
+                }
+            ]
+        },
+        {
+            "name": "activities",
+            "connector": "csvs",
+            "csv_name": "activities.csv",
+            "column_filters": [
+                {
+                    "field": "base.project_id",
+                    "column": "project_id",
+                    "value": "{base.project_id}"
+                }
+            ]
+        }
+    ],
+    "datasets": [
+        {
+            "name": "Project Data",
+            "create": [
+                {
+                    "type": "query",
+                    "name": "projects"
+                }
+            ],
+            "summarize": "The project ID is {project_id}. The project name is {project_name}. The stadium is being built in {location}. It has a budget of {budget}. It is {percent_complete} done. It started on {start_date}. It is estimated to finish on {estimated_end_date}. ",
+            "remove_comma": false
+        },
+        {
+            "name": "Activity Data",
+            "create": [
+                {
+                    "type": "query",
+                    "name": "activities"
+                }
+            ]
+        },
+        {
+            "name": "Project Updates",
+            "create": [
+                {
+                    "type": "query",
+                    "name": "project_updates"
+                }
+            ]
+        },
+        {
+            "name": "Activities By Status",
+            "create": [
+                {
+                    "type": "dataset",
+                    "name": "Activity Data"
+                },
+                {
+                    "type": "function",
+                    "name": "build_pie_graph",
+                    "params": {
+                        "index_field": "activity_status",
+                        "value_field": "count",
+                        "label_field": "Activity Status"
+                    }
+                }
+            ],
+            "summarize": "There are {count} phases that are {Activity Status}. ",
+            "remove_comma": false
+        },
+        {
+            "name": "Activity Status By Days",
+            "create": [
+                {
+                    "type": "dataset",
+                    "name": "Activity Data"
+                },
+                {
+                    "type": "function",
+                    "name": "build_pie_graph",
+                    "params": {
+                        "index_field": "activity_status",
+                        "value_field": "Duration in Days",
+                        "label_field": "Activity Status",
+                        "count_field": "duration"
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Current Activity",
+            "create": [
+                {
+                    "type": "dataset",
+                    "name": "Activity Data"
+                },
+                {
+                    "type": "function",
+                    "name": "filter_by_value",
+                    "params": {
+                        "column": "activity_status",
+                        "value": "In Progress"
+                    }
+                }
+            ],
+            "summarize": "The current activity phase is {activity_name}. ",
+            "remove_comma": false
+        }
+    ],
+    "summary": {
+        "datasets": [
+            "Project Data",
+            "Activities By Status",
+            "Current Activity"
+        ]
+    },
+    "visualizations": [
+        {
+            "type": "pie",
+            "dataset": "Activities By Status",
+            "title": "Activities By Status",
+            "value_column": "count",
+            "label_column": "Activity Status",
+            "description": "Pie Graph of activities by their progress status."
+        },
+        {
+            "type": "line",
+            "dataset": "Project Updates",
+            "title": "Project Progress",
+            "x_axis": "date",
+            "y_axis": "percent_complete",
+            "description": "Line Graph of a projects percent complete over time."
+        },
+        {
+            "type": "pie",
+            "dataset": "Activity Status By Days",
+            "title": "Activity Status by Days",
+            "value_column": "Duration in Days",
+            "label_column": "Activity Status",
+            "description": "Pie Graph of activity statuses' by their duration in days."
+        }
+    ]
+}

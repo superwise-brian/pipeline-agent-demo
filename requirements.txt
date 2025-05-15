@@ -1,0 +1,5 @@
+streamlit>=1.45.1
+pandas>=2.2.3
+sqlalchemy>=2.0.41
+dsl-spa>=0.0.10
+superwise-api>=4.5.0
