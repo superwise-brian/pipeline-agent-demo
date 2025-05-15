@@ -1,0 +1,75 @@
+from dsl_spa.utils.schema import PipelineField, CSV, Filter, Dataset, SummaryDataset, Summary, PieChart, LineGraph, StandardPipelineSchema
+
+# Fields
+fields = [
+    PipelineField(field_name="project_id", field_type="string", required=True, description="Id of Project")
+]
+
+# CSVs
+projects = CSV(csv_name="projects",connector_name="csvs",filename="stadium_projects.csv")
+projects.add_column_filter("base.project_id","project_id","{base.project_id}")
+project_updates = CSV(csv_name="project_updates",connector_name="csvs",filename="project_updates.csv")
+project_updates.add_column_filter("base.project_id","project_id","{base.project_id}")
+activities = CSV(csv_name="activities",connector_name="csvs",filename="activities.csv")
+activities.add_column_filter("base.project_id","project_id","{base.project_id}")
+csvs = [projects, project_updates, activities]
+
+# Datasets
+project_data = SummaryDataset(dataset_name="Project Data", summary_by_row="The project ID is {project_id}. The project name is {project_name}. The stadium is being built in {location}. It has a budget of {budget}. It is {percent_complete} done. It started on {start_date}. It is estimated to finish on {estimated_end_date}. ")
+project_data.create_from_query(query_name="projects")
+activity_data = Dataset(dataset_name="Activity Data")
+activity_data.create_from_query(query_name="activities")
+project_updates = Dataset(dataset_name="Project Updates")
+project_updates.create_from_query(query_name="project_updates")
+
+activity_by_status = SummaryDataset(dataset_name="Activities By Status", summary_by_row="There are {count} phases that are {Activity Status}. ")
+activity_by_status.create_from_dataset(dataset_name="Activity Data")
+params = {
+    "index_field": "activity_status",
+    "value_field": "count",
+    "label_field": "Activity Status"
+}
+activity_by_status.add_function(function_name="build_pie_graph",function_params_dict=params)
+
+activity_status_by_days = Dataset(dataset_name="Activity Status By Days")
+activity_status_by_days.create_from_dataset(dataset_name="Activity Data")
+params = {
+    "index_field": "activity_status",
+    "value_field": "Duration in Days",
+    "label_field": "Activity Status",
+    "count_field": "duration"
+    
+}
+activity_status_by_days.add_function(function_name="build_pie_graph",function_params_dict=params)
+
+current_actviity = SummaryDataset(dataset_name="Current Activity",summary_by_row="The current activity phase is {activity_name}. ")
+current_actviity.create_from_dataset(dataset_name="Activity Data")
+params = {
+    "column": "activity_status",
+    "value": "In Progress"
+}
+current_actviity.add_function(function_name="filter_by_value",function_params_dict=params)
+
+datasets = [project_data,activity_data,project_updates,activity_by_status,activity_status_by_days,current_actviity]
+
+# Summary
+summary = Summary(datasets=[project_data,activity_by_status,current_actviity])
+
+# Visualizations
+pie_activities_by_status = PieChart(dataset=activity_by_status, title="Activities By Status", description="Pie Graph of activities by their progress status.", value_column="count",label_column="Activity Status")
+line_percent_complete = LineGraph(dataset=project_updates,title="Project Progress", description="Line Graph of a projects percent complete over time.", x_axis="date", y_axis="percent_complete")
+pie_activity_status_by_days = PieChart(dataset=activity_status_by_days, title="Activity Status by Days", description="Pie Graph of activity statuses' by their duration in days.", value_column="Duration in Days",label_column="Activity Status")
+
+visualizations = [pie_activities_by_status, line_percent_complete, pie_activity_status_by_days]
+
+# Standard Pipeline
+pipeline = StandardPipelineSchema(pipeline_name="Project Information",
+                                  scope="Information for project {base.project_id}", 
+                                  scope_description="Details on project activities, costs, and current status.", 
+                                  fields=fields,
+                                  queries=[],
+                                  csvs=csvs,
+                                  datasets=datasets,
+                                  summary=summary,
+                                  visualizations=visualizations)
+print(json.dumps(pipeline.get_schema()))

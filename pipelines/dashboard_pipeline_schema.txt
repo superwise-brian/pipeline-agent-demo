@@ -1,0 +1,127 @@
+from dsl_spa.utils.schema import PipelineField, CSV, Filter, Dataset, SummaryDataset, Summary, PieChart, LineGraph, DashboardPipelineSchema
+
+# CSVs
+projects = CSV(csv_name="projects",connector_name="csvs",filename="stadium_projects.csv")
+project_updates = CSV(csv_name="project_updates",connector_name="csvs",filename="project_updates.csv")
+activities = CSV(csv_name="activities",connector_name="csvs",filename="activities.csv")
+csvs = [projects, project_updates, activities]
+
+# Filters
+primary_project = Filter(filter_name="primary_project",display_name="Primary Project",column_name="project_id",query_name="projects",include_any=False)
+secondary_project = Filter(filter_name="secondary_project",display_name="Secondary Project",column_name="project_id",query_name="projects",include_any=False)
+filters = [primary_project,secondary_project]
+
+# Datasets
+## Primary Project
+primary_project_data = SummaryDataset(dataset_name="Primary Project Data",summary_prefix="The following details are for the primary project in this summary. ", summary_by_row="The project ID is {project_id}. The project name is {project_name}. The stadium is being built in {location}. It has a budget of {budget}. It is {percent_complete} done. It started on {start_date}. It is estimated to finish on {estimated_end_date}. ")
+primary_project_data.create_from_query(query_name="projects")
+primary_project_data.add_filter(["primary_project"])
+primary_activity_data = Dataset(dataset_name="Primary Project Activity Data")
+primary_activity_data.create_from_query(query_name="activities")
+primary_activity_data.add_filter(["primary_project"])
+primary_project_updates = Dataset(dataset_name="Primary Project Updates")
+primary_project_updates.create_from_query(query_name="project_updates")
+primary_project_updates.add_filter(["primary_project"])
+
+primary_activity_by_status = SummaryDataset(dataset_name="Primary Project Activities By Status", summary_by_row="There are {count} phases that are {Activity Status}. ")
+primary_activity_by_status.create_from_dataset(dataset_name="Primary Project Activity Data")
+params = {
+    "index_field": "activity_status",
+    "value_field": "count",
+    "label_field": "Activity Status"
+}
+primary_activity_by_status.add_function(function_name="build_pie_graph",function_params_dict=params)
+
+primary_activity_status_by_days = Dataset(dataset_name="Primary Project Activity Status By Days")
+primary_activity_status_by_days.create_from_dataset(dataset_name="Primary Project Activity Data")
+params = {
+    "index_field": "activity_status",
+    "value_field": "Duration in Days",
+    "label_field": "Activity Status",
+    "count_field": "duration"
+    
+}
+primary_activity_status_by_days.add_function(function_name="build_pie_graph",function_params_dict=params)
+
+primary_current_actviity = SummaryDataset(dataset_name="Primary Project Current Activity",summary_by_row="The current activity phase is {activity_name}. ")
+primary_current_actviity.create_from_dataset(dataset_name="Primary Project Activity Data")
+params = {
+    "column": "activity_status",
+    "value": "In Progress"
+}
+primary_current_actviity.add_function(function_name="filter_by_value",function_params_dict=params)
+
+datasets = [primary_project_data,primary_activity_data,primary_project_updates,primary_activity_by_status,primary_activity_status_by_days,primary_current_actviity]
+
+## Secondary Project
+secondary_project_data = SummaryDataset(dataset_name="Secondary Project Data",summary_prefix="The following details are for the secondary project in this summary. ", summary_by_row="The project ID is {project_id}. The project name is {project_name}. The stadium is being built in {location}. It has a budget of {budget}. It is {percent_complete} done. It started on {start_date}. It is estimated to finish on {estimated_end_date}. ")
+secondary_project_data.create_from_query(query_name="projects")
+secondary_project_data.add_filter(["secondary_project"])
+secondary_activity_data = Dataset(dataset_name="Secondary Project Activity Data")
+secondary_activity_data.create_from_query(query_name="activities")
+secondary_activity_data.add_filter(["secondary_project"])
+secondary_project_updates = Dataset(dataset_name="Secondary Project Updates")
+secondary_project_updates.create_from_query(query_name="project_updates")
+secondary_project_updates.add_filter(["secondary_project"])
+
+secondary_activity_by_status = SummaryDataset(dataset_name="Secondary Project Activities By Status", summary_by_row="There are {count} phases that are {Activity Status}. ")
+secondary_activity_by_status.create_from_dataset(dataset_name="Secondary Project Activity Data")
+params = {
+    "index_field": "activity_status",
+    "value_field": "count",
+    "label_field": "Activity Status"
+}
+secondary_activity_by_status.add_function(function_name="build_pie_graph",function_params_dict=params)
+
+secondary_activity_status_by_days = Dataset(dataset_name="Secondary Project Activity Status By Days")
+secondary_activity_status_by_days.create_from_dataset(dataset_name="Secondary Project Activity Data")
+params = {
+    "index_field": "activity_status",
+    "value_field": "Duration in Days",
+    "label_field": "Activity Status",
+    "count_field": "duration"
+    
+}
+secondary_activity_status_by_days.add_function(function_name="build_pie_graph",function_params_dict=params)
+
+secondary_current_actviity = SummaryDataset(dataset_name="Secondary Project Current Activity",summary_by_row="The current activity phase is {activity_name}. ")
+secondary_current_actviity.create_from_dataset(dataset_name="Secondary Project Activity Data")
+params = {
+    "column": "activity_status",
+    "value": "In Progress"
+}
+secondary_current_actviity.add_function(function_name="filter_by_value",function_params_dict=params)
+
+datasets.extend([secondary_project_data,secondary_activity_data,secondary_project_updates,secondary_activity_by_status,secondary_activity_status_by_days,secondary_current_actviity])
+
+# Summary
+summary = Summary(datasets=[
+    primary_project_data,
+    primary_activity_by_status,
+    primary_current_actviity,
+    secondary_project_data,
+    secondary_activity_by_status,
+    secondary_current_actviity])
+
+# Visualizations
+primary_pie_activities_by_status = PieChart(dataset=primary_activity_by_status, title="Primary Project Activities By Status", description="Pie Graph of activities by their progress status.", value_column="count",label_column="Activity Status")
+primary_line_percent_complete = LineGraph(dataset=primary_project_updates,title="Primary Project Progress", description="Line Graph of a projects percent complete over time.", x_axis="date", y_axis="percent_complete")
+primary_pie_activity_status_by_days = PieChart(dataset=primary_activity_status_by_days, title="Primary Project Activity Status by Days", description="Pie Graph of activity statuses' by their duration in days.", value_column="Duration in Days",label_column="Activity Status")
+
+secondary_pie_activities_by_status = PieChart(dataset=secondary_activity_by_status, title="Secondary Project Activities By Status", description="Pie Graph of activities by their progress status.", value_column="count",label_column="Activity Status")
+secondary_line_percent_complete = LineGraph(dataset=secondary_project_updates,title="Secondary Project Progress", description="Line Graph of a projects percent complete over time.", x_axis="date", y_axis="percent_complete")
+secondary_pie_activity_status_by_days = PieChart(dataset=secondary_activity_status_by_days, title="Secondary Project Activity Status by Days", description="Pie Graph of activity statuses' by their duration in days.", value_column="Duration in Days",label_column="Activity Status")
+
+visualizations = [primary_pie_activities_by_status,primary_line_percent_complete,primary_pie_activity_status_by_days,secondary_pie_activities_by_status,secondary_line_percent_complete,secondary_pie_activity_status_by_days]
+
+# Dashboard Pipeline
+dashboard = DashboardPipelineSchema(pipeline_name="Comparison Dashboard",
+                                    scope="Dashboard to compare two projects", 
+                                    scope_description="Comparison of project activities, costs, and current status.", 
+                                    fields=[],
+                                    queries=[],
+                                    csvs=csvs,
+                                    filters=filters,
+                                    datasets=datasets,
+                                    summary=summary,
+                                    visualizations=visualizations)
