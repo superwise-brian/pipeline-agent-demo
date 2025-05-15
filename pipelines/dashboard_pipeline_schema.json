@@ -1,5 +1,5 @@
 {
-    "pipeline_name": "Project Information",
+    "pipeline_name": "Comparison Dashboard",
     "scope": "Dashboard to compare two projects",
     "scope_description": "Comparison of project activities, costs, and current status.",
     "fields": {  },
