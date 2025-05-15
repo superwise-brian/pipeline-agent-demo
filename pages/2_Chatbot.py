@@ -52,36 +52,39 @@ with chat:
         scope_description = st.session_state["pipeline"].get_scope_description()
         st.write(f"Ask questions about {scope} - {scope_description}")
         
-    question = st.chat_input("How may I assist you today?")
-    if question:
-        if "pipeline" not in st.session_state:
-            sw_response = ask_swe_application_via_api(st.session_state["superwise_client"], 
-                                                      app=os.environ["PIPELINE_SCHEMA_APPLICATION_ID"], 
-                                                      user_input=question)
-            fields = json.loads(sw_response)
-            
-            st.session_state["input_fields"] = fields
-            
-            with open("pipelines/project_pipeline_schema.json", 'r') as f:
-                schema_text = f.read()
-                schema = json.loads(schema_text)
+    try:
+        question = st.chat_input("How may I assist you today?")
+        if question:
+            if "pipeline" not in st.session_state:
+                sw_response = ask_swe_application_via_api(st.session_state["superwise_client"], 
+                                                        app=os.environ["PIPELINE_SCHEMA_APPLICATION_ID"], 
+                                                        user_input=question)
+                fields = json.loads(sw_response)
                 
-            pipeline = StandardPipeline(fields, json_schema=schema,connectors=st.session_state["connectors"],functions=st.session_state["pipeline_functions"])
-            pipeline.initialize_data()
-            pipeline.process_data()
-            st.session_state["schema"] = schema
-            st.session_state["pipeline"] = pipeline
-            project_id = fields["project_id"]
-            st.session_state["chat_history"].extend([question,f"Pipeline loaded for project {project_id}!"])
-        else:            
-            summary_text = st.session_state["pipeline"].get_summary()
-            
-            swe_app_input = f"""Summary: {summary_text}
-            Question: {question}
-            """
-            
-            sw_response = ask_swe_application_via_api(st.session_state["superwise_client"], app=os.environ["SUMMARY_APPLICATION_ID"], user_input=swe_app_input)
-            st.session_state["chat_history"].extend([question,sw_response])
+                st.session_state["input_fields"] = fields
+                
+                with open("pipelines/project_pipeline_schema.json", 'r') as f:
+                    schema_text = f.read()
+                    schema = json.loads(schema_text)
+                    
+                pipeline = StandardPipeline(fields, json_schema=schema,connectors=st.session_state["connectors"],functions=st.session_state["pipeline_functions"])
+                pipeline.initialize_data()
+                pipeline.process_data()
+                st.session_state["schema"] = schema
+                st.session_state["pipeline"] = pipeline
+                project_id = fields["project_id"]
+                st.session_state["chat_history"].extend([question,f"Pipeline loaded for project {project_id}!"])
+            else:            
+                summary_text = st.session_state["pipeline"].get_summary()
+                
+                swe_app_input = f"""Summary: {summary_text}
+                Question: {question}
+                """
+                
+                sw_response = ask_swe_application_via_api(st.session_state["superwise_client"], app=os.environ["SUMMARY_APPLICATION_ID"], user_input=swe_app_input)
+                st.session_state["chat_history"].extend([question,sw_response])
+    except Exception as e:
+        st.session_state["chat_history"].extend([question,"This was not a valid request. Make sure to follow the instructions above!"])
         
     roles = ["user","assistant"]
     role_id = 0
